@@ -1,0 +1,11 @@
+- payload:
+    username: admin
+    password: "123456"
+  expected_username: admin
+- payload:
+    username: user
+    password: "654321"
+  expected_username: user
+- payload:
+    password: "123456"
+  expected_username: null
