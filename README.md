@@ -10,3 +10,7 @@ cd week03-pytest
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m pytest tests -v
+
+```
+
+期望：`5 passed, 1 skipped, 1 xfailed`。不要提交 `.venv`，本地自己建。
