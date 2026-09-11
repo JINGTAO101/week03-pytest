@@ -5,11 +5,9 @@ import requests
 import yaml
 from requests.exceptions import RequestException
 
-ROOT = Path(__file__).resolve().parents[1]
-_cfg = yaml.safe_load(
-    (ROOT / "config" / "env.yaml").read_text(encoding="utf-8")
-)
-TIMEOUT = _cfg["timeout"]
+from common.settings import load_cfg
+
+TIMEOUT = load_cfg()["timeout"]
 DEFAULT_HEADERS = {"Accept": "application/json"}
 _token = None
 
