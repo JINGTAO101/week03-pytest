@@ -1,4 +1,4 @@
-#timeout default:10 seconds
+# comment from BRANCH
 import requests
 
 def get(url,timeout=10,**kwargs):
