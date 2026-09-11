@@ -1,4 +1,3 @@
-import requests
 import pytest
 import yaml
 from pathlib import Path
