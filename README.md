@@ -13,4 +13,4 @@ python -m venv .venv
 
 ```
 
-期望：`5 passed, 1 skipped, 1 xfailed`。不要提交 `.venv`，本地自己建。
+期望：`6 passed, 1 skipped, 1 xfailed`。不要提交 `.venv`，本地自己建。

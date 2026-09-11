@@ -9,4 +9,5 @@ def test_httpbin_get_foo(base_url):
     assert response.status_code == 200,(
         f"url={url}, status={response.status_code} body={response.text}")
     body = response.json()
+    assert body["headers"]["Accept"] == "application/json"
     assert body["args"]["foo"] == "1"
