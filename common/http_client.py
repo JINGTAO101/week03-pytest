@@ -1,4 +1,4 @@
-#define timeout as 10 seconds
+#timeout default:10 seconds
 import requests
 
 def get(url,timeout=10,**kwargs):
