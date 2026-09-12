@@ -3,3 +3,5 @@ requests
 pyyaml
 pymysql
 allure-pytest
+fastapi 
+uvicorn
