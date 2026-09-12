@@ -7,6 +7,9 @@ from requests.exceptions import RequestException
 
 from common.settings import load_cfg
 
+import allure
+
+
 TIMEOUT = load_cfg()["timeout"]
 DEFAULT_HEADERS = {"Accept": "application/json"}
 _token = None
@@ -34,6 +37,16 @@ def _send(method, url, timeout=None, **kwargs):
         raise RuntimeError(f"{method} {url} failed: {e}") from e
     elapsed_ms = (time.perf_counter() - start) * 1000
     print(f"{method} {url} -> {response.status_code} ({elapsed_ms:.0f}ms)")
+    allure.attach(
+        f"{method} {url}",
+        name="request",
+        attachment_type=allure.attachment_type.TEXT,
+    )
+    allure.attach(
+        f"status={response.status_code}\n{response.text}",
+        name="response",
+        attachment_type=allure.attachment_type.TEXT,
+    )
     return response
 
 
