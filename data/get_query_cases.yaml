@@ -1,0 +1,18 @@
+- params:
+    foo: "1"
+  path: args.foo
+  expected: "1"
+- params:
+    bar: "2"
+  path: args.bar
+  expected: "2"
+- params:
+    foo: "1"
+    bar: "2"
+  path: args.foo
+  expected: "1"
+- params:
+    foo: "1"
+    bar: "2"
+  path: args.bar
+  expected: "2"
