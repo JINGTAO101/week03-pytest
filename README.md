@@ -2,7 +2,7 @@
 
 [![ci](https://github.com/JINGTAO101/week03-pytest/actions/workflows/ci.yml/badge.svg)](https://github.com/JINGTAO101/week03-pytest/actions/workflows/ci.yml)
 
-pytest 接口练习：httpbin、本地 FastAPI（注册 / 登录 / 查询）、MySQL 对账、Allure 报告、Docker Compose、GitHub Actions。
+pytest 接口练习：httpbin、本地 FastAPI（注册 / 登录 / 查询 / 下单）、MySQL 对账、Allure 报告、Docker Compose、GitHub Actions。
 
 不要提交 `.venv`、`allure-results/`、`allure-report/`，本地自己建。
 
@@ -25,9 +25,14 @@ python -m venv .venv
 $env:TEST_ENV="dev"
 ```
 
-本地 FastAPI 地址写在 `tests/test_app_auth.py` 里，是 `http://127.0.0.1:8000`，不走这份 YAML。
+本地 FastAPI 地址写在用例里，是 `http://127.0.0.1:8000`，不走这份 YAML。
 
-MySQL 用例连 `127.0.0.1:3306`，库名 `qa_practice`，账号 `root`。练习密码在 `common/db.py` 里，只给本机用。
+两套 MySQL，不要混端口：
+
+- 本机服务（`test_mysql_devices.py`）连 `127.0.0.1:3306`，库名 `qa_practice`。
+- Docker Compose 里的 MySQL 映射到宿主机 **3307**。订单对账 `test_orders.py` 走 3307。容器内部应用连的是主机名 `mysql`、端口 `3306`。
+
+练习密码在 `common/db.py` 里，只给本机和练习 CI 用。
 
 ## 怎么跑
 
@@ -49,11 +54,22 @@ MySQL 用例连 `127.0.0.1:3306`，库名 `qa_practice`，账号 `root`。练习
 .\.venv\Scripts\python.exe -m pytest tests/test_app_auth.py -v
 ```
 
-跑 MySQL 对账之前，本机 MySQL 要在、且有库 `qa_practice` 和表 `devices` / `orders`：
+跑本机设备表对账之前，本机 MySQL 要在、且有库 `qa_practice` 和表 `devices`：
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest tests/test_mysql_devices.py -v
 ```
+
+跑下单 / 查单 / 非法数量 / 库表对账之前，用 Compose 起 MySQL + 应用（不要和本机 uvicorn 同时占 8000）。容器起来不等于库就绪，先等到 `/db-ping` 返回 JSON，再跑用例：
+
+```powershell
+docker compose up -d --build
+curl.exe http://127.0.0.1:8000/db-ping
+.\.venv\Scripts\python.exe -m pytest tests/test_orders.py -v
+docker compose down
+```
+
+`/db-ping` 若是 `Internal Server Error`，隔几秒再 curl，直到出现 `{"ok":1}`。
 
 全部一起跑（httpbin + 本地服务 + MySQL 都就绪时）：
 
@@ -81,7 +97,9 @@ allure serve allure-results
 
 ## CI
 
-`push` 到 `master` 后，GitHub Actions 会在 Ubuntu 上：安装依赖 → 跑 `test_marks.py` → `docker compose up` 起被测 → 跑登录三条 → 上传 `allure-results`。
+`push` 到 `master` 后，GitHub Actions 会在 Ubuntu 上：安装依赖 → 跑 `test_marks.py` → `docker compose up` 起 MySQL 和应用 → 等到 `/db-ping` 通 → 跑登录三条 → 跑订单四条（含库表对账）→ 上传 `allure-results`。
+
+徽章绿只说明这次 workflow 过了。订单有没有测到，要看 job 里有没有 `Wait for db` 和 `Pytest orders`。
 
 看红绿：仓库页 **Actions**，或点标题下的徽章。失败点进 job 看是哪一步红了。
 
@@ -93,10 +111,11 @@ allure serve 解压出来的目录
 
 GitHub 网页打不开 Allure，必须本机 `serve`。
 
-本地也可以用容器起被测（不要和本机 uvicorn 同时占 8000）：
+本地用容器起整套栈（不要和本机 uvicorn 同时占 8000）：
 
 ```powershell
-docker compose up -d --build app
-.\.venv\Scripts\python.exe -m pytest tests/test_app_auth.py -v
+docker compose up -d --build
+curl.exe http://127.0.0.1:8000/db-ping
+.\.venv\Scripts\python.exe -m pytest tests/test_app_auth.py tests/test_orders.py -v
 docker compose down
 ```
