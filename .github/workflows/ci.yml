@@ -14,3 +14,17 @@ jobs:
         run: pip install -r requirements.txt
       - name: Pytest marks
         run: pytest tests/test_marks.py -v
+      - name: Start app
+        run: docker compose up -d --build app
+      - name: Wait for health
+        run: |
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8000/health && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Pytest auth
+        run: pytest tests/test_app_auth.py -v
+      - name: Stop app
+        if: always()
+        run: docker compose down
