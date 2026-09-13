@@ -19,10 +19,26 @@ def _ensure_orders_table():
         CREATE TABLE IF NOT EXISTS orders (
             id INT PRIMARY KEY AUTO_INCREMENT,
             item VARCHAR(64) NOT NULL,
-            qty INT NOT NULL
+            qty INT NOT NULL,
+            owner VARCHAR(64) NOT NULL
         )
         """
     )
+    try:
+        execute(
+            "ALTER TABLE orders ADD COLUMN owner VARCHAR(64) NOT NULL DEFAULT ''"
+        )
+    except Exception:
+        pass
+
+def _user_from_header(authorization: str | None):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="missing token")
+    token = authorization.removeprefix("Bearer ")
+    username = token.removeprefix("token-")
+    if username not in users:
+        raise HTTPException(status_code=401, detail="bad token")
+    return username
 
 @app.get("/health")
 def health():
@@ -34,23 +50,27 @@ def db_ping():
     return rows[0]
 
 @app.post("/orders")
-def create_order(body: OrderIn):
+def create_order(body: OrderIn, authorization: str | None = Header(default=None)):
+    username = _user_from_header(authorization)
     if body.qty < 1:
         raise HTTPException(status_code=400, detail="qty must be >= 1")
     _ensure_orders_table()
     order_id = execute(
-        "INSERT INTO orders (item, qty) VALUES (%s, %s)",
-        (body.item, body.qty),
+        "INSERT INTO orders (item, qty, owner) VALUES (%s, %s, %s)",
+        (body.item, body.qty, username),
     )
     return {"id": order_id, "item": body.item, "qty": body.qty}
 
 @app.get("/orders/{order_id}")
-def get_order(order_id: int):
+def get_order(order_id: int, authorization: str | None = Header(default=None)):
+    username = _user_from_header(authorization)
     _ensure_orders_table()
-    rows = query("SELECT id, item, qty FROM orders WHERE id = %s", (order_id,))
+    rows = query("SELECT id, item, qty, owner FROM orders WHERE id = %s", (order_id,))
     if not rows:
         raise HTTPException(status_code=404, detail="order not found")
-    return rows[0]
+    if rows[0]["owner"] != username:
+        raise HTTPException(status_code=403, detail="forbidden")
+    return {"id": rows[0]["id"], "item": rows[0]["item"], "qty": rows[0]["qty"]}
 
 @app.post("/register")
 def register(body: RegisterIn):
@@ -67,10 +87,5 @@ def login(body: RegisterIn):
 
 @app.get("/me")
 def me(authorization: str | None = Header(default=None)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="missing token")
-    token = authorization.removeprefix("Bearer ")
-    username = token.removeprefix("token-")
-    if username not in users:
-        raise HTTPException(status_code=401, detail="bad token")
+    username = _user_from_header(authorization)
     return {"username": username}

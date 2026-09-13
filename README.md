@@ -2,7 +2,7 @@
 
 [![ci](https://github.com/JINGTAO101/week03-pytest/actions/workflows/ci.yml/badge.svg)](https://github.com/JINGTAO101/week03-pytest/actions/workflows/ci.yml)
 
-pytest 接口练习：httpbin、本地 FastAPI（注册 / 登录 / 查询 / 下单）、MySQL 对账、Allure 报告、Docker Compose、GitHub Actions。
+pytest 接口练习：httpbin、本地 FastAPI（注册 / 登录 / 下单 / 越权）、MySQL 对账、Allure 报告、Docker Compose、GitHub Actions。
 
 不要提交 `.venv`、`allure-results/`、`allure-report/`，本地自己建。
 
@@ -60,7 +60,9 @@ $env:TEST_ENV="dev"
 .\.venv\Scripts\python.exe -m pytest tests/test_mysql_devices.py -v
 ```
 
-跑下单 / 查单 / 非法数量 / 库表对账之前，用 Compose 起 MySQL + 应用（不要和本机 uvicorn 同时占 8000）。容器起来不等于库就绪，先等到 `/db-ping` 返回 JSON，再跑用例：
+跑订单用例之前，用 Compose 起 MySQL + 应用（不要和本机 uvicorn 同时占 8000）。`POST /orders` 和 `GET /orders/{id}` 都要登录。未带 Token 期望 **401**；已登录但查别人的单期望 **403**；单不存在期望 **404**；`qty < 1` 期望 **400**。改过 `app/main.py` 必须先保存再 `--build`，否则容器还是旧逻辑。
+
+容器起来不等于库就绪，先等到 `/db-ping` 返回 JSON，再跑用例：
 
 ```powershell
 docker compose up -d --build
@@ -97,7 +99,7 @@ allure serve allure-results
 
 ## CI
 
-`push` 到 `master` 后，GitHub Actions 会在 Ubuntu 上：安装依赖 → 跑 `test_marks.py` → `docker compose up` 起 MySQL 和应用 → 等到 `/db-ping` 通 → 跑登录三条 → 跑订单四条（含库表对账）→ 上传 `allure-results`。
+`push` 到 `master` 后，GitHub Actions 会在 Ubuntu 上：安装依赖 → 跑 `test_marks.py` → `docker compose up` 起 MySQL 和应用 → 等到 `/db-ping` 通 → 跑登录三条 → 跑订单六条（未登录 401、越权 403、非法数量 400、对账）→ 上传 `allure-results`。
 
 徽章绿只说明这次 workflow 过了。订单有没有测到，要看 job 里有没有 `Wait for db` 和 `Pytest orders`。
 
