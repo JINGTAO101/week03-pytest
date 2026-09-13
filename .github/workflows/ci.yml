@@ -13,7 +13,7 @@ jobs:
       - name: Install deps
         run: pip install -r requirements.txt
       - name: Pytest marks
-        run: pytest tests/test_marks.py -v
+        run: pytest tests/test_marks.py -v --alluredir=allure-results
       - name: Start app
         run: docker compose up -d --build app
       - name: Wait for health
@@ -24,7 +24,13 @@ jobs:
           done
           exit 1
       - name: Pytest auth
-        run: pytest tests/test_app_auth.py -v
+        run: pytest tests/test_app_auth.py -v --alluredir=allure-results
       - name: Stop app
         if: always()
         run: docker compose down
+      - name: Upload allure-results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: allure-results
