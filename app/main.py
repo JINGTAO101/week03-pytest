@@ -1,6 +1,7 @@
 #
 from fastapi import FastAPI, HTTPException,Header
 from pydantic import BaseModel
+from common.db import query, execute
 
 app = FastAPI()
 users = {}
@@ -8,9 +9,48 @@ class RegisterIn(BaseModel):
     username:str
     password:str
 
+class OrderIn(BaseModel):
+    item: str
+    qty: int
+
+def _ensure_orders_table():
+    execute(
+        """
+        CREATE TABLE IF NOT EXISTS orders (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            item VARCHAR(64) NOT NULL,
+            qty INT NOT NULL
+        )
+        """
+    )
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+@app.get("/db-ping")
+def db_ping():
+    rows = query("SELECT 1 AS ok")
+    return rows[0]
+
+@app.post("/orders")
+def create_order(body: OrderIn):
+    if body.qty < 1:
+        raise HTTPException(status_code=400, detail="qty must be >= 1")
+    _ensure_orders_table()
+    order_id = execute(
+        "INSERT INTO orders (item, qty) VALUES (%s, %s)",
+        (body.item, body.qty),
+    )
+    return {"id": order_id, "item": body.item, "qty": body.qty}
+
+@app.get("/orders/{order_id}")
+def get_order(order_id: int):
+    _ensure_orders_table()
+    rows = query("SELECT id, item, qty FROM orders WHERE id = %s", (order_id,))
+    if not rows:
+        raise HTTPException(status_code=404, detail="order not found")
+    return rows[0]
 
 @app.post("/register")
 def register(body: RegisterIn):

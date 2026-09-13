@@ -1,14 +1,18 @@
+import os
 import pymysql
 
-def query(sql,args=None,):
-    conn = pymysql.connect(
-        host="127.0.0.1",
-        port=3306,
+def _connect(**kwargs):
+    return pymysql.connect(
+        host=os.getenv("MYSQL_HOST", "127.0.0.1"),
+        port=int(os.getenv("MYSQL_PORT", "3306")),
         user="root",
         password="qa123456",
         database="qa_practice",
-        cursorclass=pymysql.cursors.DictCursor
+        **kwargs,
     )
+
+def query(sql,args=None,):
+    conn = _connect(cursorclass=pymysql.cursors.DictCursor)
     try:
         with conn.cursor() as cur:
             cur.execute(sql,args or ())
@@ -17,13 +21,7 @@ def query(sql,args=None,):
         conn.close()
 
 def execute(sql, args=None):
-    conn = pymysql.connect(
-        host="127.0.0.1",
-        port=3306,
-        user="root",
-        password="qa123456",
-        database="qa_practice",
-    )
+    conn = _connect()
     try:
         with conn.cursor() as cur:
             cur.execute(sql, args or ())

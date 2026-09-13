@@ -10,3 +10,6 @@ services:
     build: .
     ports:
       - "8000:8000"
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
