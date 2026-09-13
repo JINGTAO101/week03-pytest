@@ -1,6 +1,8 @@
 # week03-pytest
 
-pytest 接口练习：httpbin、本地 FastAPI（注册 / 登录 / 查询）、MySQL 对账、Allure 报告。
+[![ci](https://github.com/JINGTAO101/week03-pytest/actions/workflows/ci.yml/badge.svg)](https://github.com/JINGTAO101/week03-pytest/actions/workflows/ci.yml)
+
+pytest 接口练习：httpbin、本地 FastAPI（注册 / 登录 / 查询）、MySQL 对账、Allure 报告、Docker Compose、GitHub Actions。
 
 不要提交 `.venv`、`allure-results/`、`allure-report/`，本地自己建。
 
@@ -76,3 +78,25 @@ allure serve allure-results
 浏览器会打开 Allure。点套件里的某条用例，**Attachments** 里有 `request` 和 `response`。`serve` 占着窗口，看完 Ctrl+C。
 
 本仓库作者本机：JRE 在 `D:\JRE`，Allure 在 `D:\Allure`。旧终端若找不到命令，用完整路径或新开窗口。
+
+## CI
+
+`push` 到 `master` 后，GitHub Actions 会在 Ubuntu 上：安装依赖 → 跑 `test_marks.py` → `docker compose up` 起被测 → 跑登录三条 → 上传 `allure-results`。
+
+看红绿：仓库页 **Actions**，或点标题下的徽章。失败点进 job 看是哪一步红了。
+
+下载产物：打开那次运行的 Summary，Artifacts 里有 `allure-results`。解压后本机：
+
+```powershell
+allure serve 解压出来的目录
+```
+
+GitHub 网页打不开 Allure，必须本机 `serve`。
+
+本地也可以用容器起被测（不要和本机 uvicorn 同时占 8000）：
+
+```powershell
+docker compose up -d --build app
+.\.venv\Scripts\python.exe -m pytest tests/test_app_auth.py -v
+docker compose down
+```
